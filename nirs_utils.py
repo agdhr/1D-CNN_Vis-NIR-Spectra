@@ -15,23 +15,23 @@ from sklearn.model_selection import KFold, cross_val_score
 
 
 """LOAD DATASET"""
-def load_data(data):
+def load_csv(data):
     dataset = pd.read_csv(data)
     return dataset
 
 """EXTRACT VARIABLE DATA"""
 def variable_data(data):
     # --- Label
-    label = data.values[:,1].astype('uint8')
+    label = data.values[:, 1].astype('uint8')
     # --- Spectra data
-    spectra = data.values[:,2:].astype('float')
+    spectra = data.values[:, 2:].astype('float')
     # --- Wavelengths
     cols = list(data.columns.values.tolist())
     wls = [float(x) for x in cols[2:]]
     return label, spectra, wls
 
 """PLOT SPECTRA"""
-def plot_spectra(x, y):
+def plot_spectra(x, y, output_path, title='Plot Spectra'):
     fig = plt.figure(figsize=(6, 5))
     ax = fig.add_subplot()
     ax.xaxis.label.set_color('black')
@@ -43,10 +43,13 @@ def plot_spectra(x, y):
     ax.spines['right'].set_color('black')
     ax.spines['bottom'].set_color('black')
     plt.plot(x, y.T)
-    plt.xticks()    # np.arange(400, 1000, step=50),
-    plt.ylabel('Reflectance (%)')
+    plt.xticks()
+    plt.yticks()
+    plt.title(title, fontweight='bold', fontsize=12, fontname="Segoe UI")
+    plt.ylabel('Preprocessed Spectra', fontsize=12, fontname="Segoe UI")
     plt.xlabel('Wavelength (nm)')
-    plt.grid(False) # visible=None, which='major', axis='both', **kwargs
+    plt.grid(False)
+    plt.savefig(f'{output_path}Plot_{title}.png')
     plt.show()
 
 def plot_average_spectra(wls, mean1, mean2, mean3, mean4):
@@ -79,24 +82,29 @@ def sma(input_spectra, window_size):
     return moving_averages
 
 # MSC - MULTIPLICATIVE SCATTER CORRECTION
-def msc(input_spectra, reference=None):
-    # --- Mean center correction
-    for i in range(input_spectra.shape[0]):
-        input_spectra[i,:] -= input_spectra[i,:].mean()
-    # --- Get the reference spektrum. If no given, estimate it from the mean
-    if reference is None:
-        # --- Calculate mean
-        ref = np.mean(input_spectra, axis=0)
+def msc(input_data, reference=None):
+    ''' Perform Multiplicative scatter correction'''
+
+    # Baseline correction
+    for i in range(input_data.shape[0]):
+        input_data[i,:] -= input_data[i,:].mean()
+
+    # Get the reference spectrum. If not given, estimate from the mean    
+    if reference is None:    
+        # Calculate mean
+        matm = np.mean(input_data, axis=0)
     else:
-        ref = reference
-    # --- Define a new array and populate it with the corrected data
-    data_msc = np.zeros_like(input_spectra)
-    for i in range(input_spectra.shape[0]):
-        # --- Run regression
-        fit = np.polyfit(ref, input_spectra[i,:], 1, full=True)
-        # --- Apply correction
-        data_msc[i,:] = (input_spectra[i,:] - fit[0][1]) / fit[0][0]
-    return data_msc, ref
+        matm = reference
+
+    # Define a new data matrix and populate it with the corrected data    
+    output_data = np.zeros_like(input_data)
+    for i in range(input_data.shape[0]):
+        # Run regression
+        fit = np.polyfit(matm, input_data[i,:], 1, full=True)
+        # Apply correction
+        output_data[i,:] = (input_data[i,:] - fit[0][1]) / fit[0][0] 
+
+    return (output_data, matm)
 
 # STANDARD NORMAL VARIATE
 def snv(input_spectra):
@@ -138,6 +146,13 @@ def detrend(input_data):
 """STANDARD SCALER"""
 def standardscaler(input_spectra):
     return StandardScaler().fit_transform(input_spectra)
+
+def minmaxscaler(input_data):
+    input_data = np.array(input_data)
+    x_min = input_data.min()
+    x_max = input_data.max()
+    X = (input_data - x_min) / (x_max - x_min)
+    return X
 
 def GlobalStandardScaler(input_data):
     input_data = np.array(input_data)
