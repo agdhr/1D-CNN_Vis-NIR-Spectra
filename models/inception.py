@@ -17,7 +17,7 @@ from keras import layers, models, activations, regularizers
 def Conv_1D_Block(x, model_width, kernel, strides=1, padding="same"):
     # 1D Convolutional Block with BatchNormalization
     x = layers.Conv1D(model_width, kernel, strides=strides, padding=padding, kernel_initializer="he_normal")(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     return x
 
@@ -152,7 +152,7 @@ def Reduction_Block_B(inputs, filterB1_1, filterB1_2, filterB2_1, filterB2_2, fi
 
     return out
 
-def Inception_v1(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg', auxilliary_outputs=False):
+def Inception_v1(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling = 'avg', auxilliary_outputs=False):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -216,7 +216,7 @@ def Inception_v1(input_dim, num_channel = 1, num_filters = 64, output_nums=4, po
 
     return model
 
-def Inception_v2(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg', auxilliary_outputs=False):
+def Inception_v2(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling = 'avg', auxilliary_outputs=False):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks

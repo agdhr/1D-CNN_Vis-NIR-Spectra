@@ -14,8 +14,9 @@ from keras import backend as K
 def conv_1d_block(x, model_width, kernel):
     # 1D convolutional block without batch normalization
     x = layers.Conv1D(model_width, kernel, padding='same', kernel_initializer = 'he_normal')(x)
-    # x = keras.layers.BatchNormalization()(x)
+    #x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
+    #x = layers.Dropout(0.25)(x)  # Dropout layer to prevent overfitting
     return x
 
 def VGG11(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
@@ -23,7 +24,7 @@ def VGG11(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Block 1
-    conv1 = conv_1d_block(inputs, num_filters (2 ** 0), kernel=3)
+    conv1 = conv_1d_block(inputs, num_filters * (2 ** 0), kernel=3)
     if conv1.shape[1] <= 2:
         pool1 = layers.MaxPooling1D(pool_size = 1, strides=2, padding='valid')(conv1)
     else:
@@ -63,8 +64,8 @@ def VGG11(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # Fully connected layers
     flatten = layers.Flatten(name='flatten')(pool5)
     # Dense layer
-    dense1 = layers.Dense(4096, activation='relu')(flatten)
-    dense2 = layers.Dense(4096, activation='relu')(dense1)
+    dense1 = layers.Dense(512, activation='relu')(flatten)
+    dense2 = layers.Dense(512, activation='relu')(dense1)
     # Output layer
     out = layers.Dense(output_nums, activation='softmax')(dense2)
     # Create the model 
@@ -77,7 +78,7 @@ def VGG13(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Block 1
-    conv1 = conv_1d_block(inputs, num_filters (2 ** 0), kernel=3)
+    conv1 = conv_1d_block(inputs, num_filters * (2 ** 0), kernel=3)
     conv2 = conv_1d_block(conv1, num_filters * (2 ** 0), kernel=3)
     if conv2.shape[1] <= 2:
         pool1 = layers.MaxPooling1D(pool_size = 1, strides=2, padding='valid')(conv2)
@@ -128,12 +129,12 @@ def VGG13(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     model.summary()
     return model
 
-def VGG16(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
+def VGG16(input_dim, num_channel = 1, num_filters = 16, output_dim=4):
     # Construct the VGG11 model
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Block 1
-    conv1 = conv_1d_block(inputs, num_filters (2 ** 0), kernel=3)
+    conv1 = conv_1d_block(inputs, num_filters * (2 ** 0), kernel=3)
     conv2 = conv_1d_block(conv1, num_filters * (2 ** 0), kernel=3)
     if conv2.shape[1] <= 2:
         pool1 = layers.MaxPooling1D(pool_size = 1, strides=2, padding='valid')(conv2)
@@ -178,10 +179,12 @@ def VGG16(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # Fully connected layers
     flatten = layers.Flatten(name='flatten')(pool5)
     # Dense layer
-    dense1 = layers.Dense(4096, activation='relu')(flatten)
-    dense2 = layers.Dense(4096, activation='relu')(dense1)
+    dense1 = layers.Dense(256)(flatten)
+    dense1 = layers.Activation('relu')(dense1)
+    dense2 = layers.Dense(256)(dense1)
+    dense2 = layers.Activation('relu')(dense2)
     # Output layer
-    out = layers.Dense(output_nums, activation='softmax')(dense2)
+    out = layers.Dense(output_dim, activation='softmax')(dense2)
     # Create the model
     model = models.Model(inputs=inputs, outputs=out)
     model.summary()
@@ -192,7 +195,7 @@ def VGG16_v2(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Block 1
-    conv1 = conv_1d_block(inputs, num_filters (2 ** 0), kernel=3)
+    conv1 = conv_1d_block(inputs, num_filters * (2 ** 0), kernel=3)
     conv2 = conv_1d_block(conv1, num_filters * (2 ** 0), kernel=3)
     if conv2.shape[1] <= 2:
         pool1 = layers.MaxPooling1D(pool_size = 1, strides=2, padding='valid')(conv2)
@@ -251,7 +254,7 @@ def VGG19(input_dim, num_channel = 1, num_filters = 16, output_nums=4):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Block 1
-    conv1 = conv_1d_block(inputs, num_filters (2 ** 0), kernel=3)
+    conv1 = conv_1d_block(inputs, num_filters * (2 ** 0), kernel=3)
     conv2 = conv_1d_block(conv1, num_filters * (2 ** 0), kernel=3)
     if conv2.shape[1] <= 2:
         pool1 = layers.MaxPooling1D(pool_size = 1, strides=2, padding='valid')(conv2)

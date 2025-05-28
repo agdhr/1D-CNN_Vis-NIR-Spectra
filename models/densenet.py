@@ -13,8 +13,9 @@ from keras import layers, models
 def conv_1d_block(x, model_width, kernel, strides):
     # 1D convolutional block without batch normalization
     x = layers.Conv1D(model_width, kernel, strides, padding='same', kernel_initializer = 'he_normal')(x)
-    # x = keras.layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
+    x = layers.Dropout(0.25)(x)  # Adding dropout for regularization
     return x
 
 def stem(inputs, num_filters):
@@ -43,14 +44,35 @@ def dense_block(x, num_filters, num_layers, bottleneck=True):
         x = layers.concatenate([x, cb], axis=-1)
     return x
 
-def transition_block(inputs, class_number):
+def transition_block(inputs, num_filters):
+    x = conv_1d_block(inputs, num_filters, 1, 2)
+    if x.shape[1] <= 2:
+        x = layers.AveragePooling1D(pool_size=1, strides=2, padding="same")(x)
+    else:
+        x = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")(x)
+
+    return x
+
+
+def classifier(inputs, class_number):
     # Construct the Classifier Group
     # inputs       : input vector
     # class_number : number of output classes
     out = layers.Dense(class_number, activation='softmax')(inputs)
+
     return out
 
-def DenseNet121(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling='avg', bottleneck=True):
+
+def regressor(inputs, feature_number):
+    # Construct the Regressor Group
+    # inputs         : input vector
+    # feature_number : number of output features
+    out = layers.Dense(feature_number, activation='linear')(inputs)
+
+    return out
+
+
+def DenseNet121(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling='avg', bottleneck=True):
     inputs = layers.Input(shape=(input_dim, num_channel))    
     stem_block = stem(inputs, num_filters)
     Dense_Block_1 = dense_block(stem_block, num_filters * 2, 6, bottleneck=bottleneck)
@@ -66,13 +88,13 @@ def DenseNet121(input_dim, num_channel = 1, num_filters = 16, output_nums=4, poo
         out = layers.GlobalMaxPooling1D()(Dense_Block_4)
     # Final dense outputting layer for the outputs
     out = layers.Flatten(name='flatten')(out)
-    outputs = layers.Dense(output_nums, activation='softmax')(out)
+    outputs = layers.Dense(output_dim, activation='softmax')(out)
     # Instantiate the Model
     model = models.Model(inputs, outputs)
     model.summary()
     return model
 
-def DenseNet161(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling='avg', bottleneck=True):
+def DenseNet161(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling='avg', bottleneck=True):
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     stem_block = stem(inputs, num_filters)  # The Stem Convolution Group
     Dense_Block_1 = dense_block(stem_block, num_filters * 2, 6, bottleneck=bottleneck)
@@ -88,13 +110,13 @@ def DenseNet161(input_dim, num_channel = 1, num_filters = 16, output_nums=4, poo
         out = layers.GlobalMaxPooling1D()(Dense_Block_4)
     # Final dense outputting layer for the outputs
     out = layers.Flatten(name='flatten')(out)
-    outputs = layers.Dense(output_nums, activation='softmax')(out)
+    outputs = layers.Dense(output_dim, activation='softmax')(out)
     # Instantiate the Model
     model = models.Model(inputs, outputs)
     model.summary()
     return model
 
-def DenseNet169(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling='avg', bottleneck=True):
+def DenseNet169(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling='avg', bottleneck=True):
     inputs = layers.Input(shape=(input_dim,num_channel))  # The input tensor
     stem_block = stem(inputs, num_filters)  # The Stem Convolution Group
     Dense_Block_1 = dense_block(stem_block, num_filters * 2, 6, bottleneck=bottleneck)
@@ -110,13 +132,13 @@ def DenseNet169(input_dim, num_channel = 1, num_filters = 16, output_nums=4, poo
         out = layers.GlobalMaxPooling1D()(Dense_Block_4)
     # Final dense outputting layer for the outputs
     out = layers.Flatten(name='flatten')(out)
-    outputs = layers.Dense(output_nums, activation='softmax')(out)
+    outputs = layers.Dense(output_dim, activation='softmax')(out)
     # Instantiate the Model
     model = models.Model(inputs, outputs)
     model.summary()
     return model
 
-def DenseNet201(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling='avg', bottleneck=True):
+def DenseNet201(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling='avg', bottleneck=True):
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     stem_block = stem(inputs, num_filters)  # The Stem Convolution Group
     Dense_Block_1 = dense_block(stem_block, num_filters * 2, 6, bottleneck=bottleneck)
@@ -132,13 +154,13 @@ def DenseNet201(input_dim, num_channel = 1, num_filters = 16, output_nums=4, poo
         out = layers.GlobalMaxPooling1D()(Dense_Block_4)
     # Final dense outputting layer for the outputs
     out = layers.Flatten(name='flatten')(out)
-    outputs = layers.Dense(output_nums, activation='softmax')(out)
+    outputs = layers.Dense(output_dim, activation='softmax')(out)
     # Instantiate the Model
     model = models.Model(inputs, outputs)
     model.summary()
     return model
 
-def DenseNet264(input_dim, num_channel = 1, num_filters = 16, output_nums=4, pooling='avg', bottleneck=True):
+def DenseNet264(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling='avg', bottleneck=True):
     inputs = layers.Input(shape=(input_dim,num_channel))  # The input tensor
     stem_block = stem(inputs, num_filters)  # The Stem Convolution Group
     Dense_Block_1 = dense_block(stem_block, num_filters * 2, 6, bottleneck=bottleneck)
@@ -154,7 +176,7 @@ def DenseNet264(input_dim, num_channel = 1, num_filters = 16, output_nums=4, poo
         out = layers.GlobalMaxPooling1D()(Dense_Block_4)
     # Final dense outputting layer for the outputs
     out = layers.Flatten(name='flatten')(out)
-    outputs = layers.Dense(output_nums, activation='softmax')(out)
+    outputs = layers.Dense(output_dim, activation='softmax')(out)
     # Instantiate the Model
     model = models.Model(inputs, outputs)
     model.summary()

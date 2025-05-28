@@ -154,7 +154,7 @@ def regressor(inputs, feature_number):
     return out
 
 
-def ResNet18(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg'):
+def ResNet18(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg'):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -166,13 +166,13 @@ def ResNet18(input_dim, num_channel = 1, num_filters = 64, output_nums=4, poolin
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()
     return model
 
-def ResNet34(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg'):
+def ResNet34(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg'):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -184,13 +184,13 @@ def ResNet34(input_dim, num_channel = 1, num_filters = 64, output_nums=4, poolin
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()
     return model
 
-def ResNet50(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg'):
+def ResNet50(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg'):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -202,13 +202,13 @@ def ResNet50(input_dim, num_channel = 1, num_filters = 64, output_nums=4, poolin
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()
     return model
 
-def ResNet101(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg'):
+def ResNet101(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg'):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -220,13 +220,13 @@ def ResNet101(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooli
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()
     return model
 
-def ResNet152(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg'):
+def ResNet152(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg'):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -238,7 +238,7 @@ def ResNet152(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooli
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()

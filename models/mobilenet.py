@@ -14,14 +14,14 @@ from keras import layers, models, activations, regularizers
 def Conv_1D_block(inputs, model_width, kernel, strides):
     # 1D Convolutional Block with BatchNormalization
     x = layers.Conv1D(model_width, kernel, strides=strides, padding="same", kernel_initializer="he_normal")(inputs)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     return x
 
 def Conv_1D_block_2(inputs, model_width, kernel, strides, nl):
     # This function defines a 1D convolution operation with BN and activation.
     x = layers.Conv1D(model_width, kernel, strides=strides, padding="same", kernel_initializer="he_normal")(inputs)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     if nl == 'HS':
         x = x * activations.relu(x + 3.0, max_value=6.0) / 6.0
     elif nl == 'RE':
@@ -32,10 +32,10 @@ def Conv_1D_DW(inputs, model_width, kernel, strides, alpha):
     # 1D Depthwise Separable Convolutional Block with BatchNormalization
     model_width = int(model_width * alpha)
     x = layers.SeparableConv1D(model_width, kernel, strides=strides, depth_multiplier=1, padding='same')(inputs)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     x = layers.Conv1D(model_width, 1, strides=1, padding="same", kernel_initializer="he_normal")(x)
-    #x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     return x
 
@@ -53,7 +53,6 @@ def bottleneck_block(inputs, filters, kernel, t, alpha, s, r=False):
         x = layers.concatenate([x, inputs], axis=-1)
     return x
 
-
 def bottleneck_block_2(inputs, filters, kernel, e, s, squeeze, nl, alpha):
     # This function defines a basic bottleneck structure.
     input_shape = K.int_shape(inputs)
@@ -65,7 +64,7 @@ def bottleneck_block_2(inputs, filters, kernel, e, s, squeeze, nl, alpha):
 
     x = Conv_1D_block_2(inputs, tchannel, 1, 1, nl)
     x = layers.SeparableConv1D(filters, kernel, strides=s, depth_multiplier=1, padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.BatchNormalization()(x)
 
     if nl == 'HS':
         x = x * activations.relu(x + 3.0, max_value=6.0) / 6.0
@@ -76,7 +75,7 @@ def bottleneck_block_2(inputs, filters, kernel, e, s, squeeze, nl, alpha):
         x = _squeeze(x)
 
     x = layers.Conv1D(cchannel, 1, strides=1, padding='same')(x)
-    x = layers.BatchNormalization()(x)
+    #x = layers.BatchNormalization()(x)
 
     if r:
         x = layers.Add()([x, inputs])
@@ -107,7 +106,7 @@ def _squeeze(inputs):
 
     return x
 
-def MobileNet_v1(input_dim, num_channel = 1, num_filters = 64, output_nums=4, pooling = 'avg', alpha=1.0):
+def MobileNet_v1(input_dim, num_channel = 1, num_filters = 16, output_dim=4, pooling = 'avg', alpha=1.0):
     # inputs       : input vector
     inputs = layers.Input(shape=(input_dim, num_channel))  # The input tensor
     # Blocks
@@ -129,7 +128,7 @@ def MobileNet_v1(input_dim, num_channel = 1, num_filters = 64, output_nums=4, po
         x = layers.GlobalMaxPool1D()(x)
     # Final Dense Outputting Layer for the outputs
     x = layers.Flatten()(x)
-    outputs = layers.Dense(output_nums, activation='softmax')(x)
+    outputs = layers.Dense(output_dim, activation='softmax')(x)
     # Create the model 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.summary()
