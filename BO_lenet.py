@@ -301,8 +301,8 @@ lenet_bo_optimizer = BayesianOptimization(
 )
 # Maximize the Bayesian Optimization function
 lenet_bo_optimizer.maximize(
-    init_points=10, # Number of initial random points
-    n_iter=20,      # Number of iterations to perform
+    init_points=5, # Number of initial random points
+    n_iter=5,      # Number of iterations to perform
 #    acq='ei',      # Acquisition function: Expected Improvement
 #    xi=0.01        # Exploration-exploitation trade-off parameter
 )
@@ -315,10 +315,7 @@ for param, value in params_lenet_.items():
 
 # Extract the best parameters
 optimizerL = [Adam, SGD, RMSprop, Adagrad]  # List of optimizers
-# Convert the best parameters to integers where applicable
-params_lenet_ = {k: round(v) if isinstance(v, (int, float)) else v for k, v in params_lenet_.items()}
-
-# Convert the best parameters to their actual values
+# Convert the best parameters to integers or floats as needed
 num_filters1 = round(params_lenet_['num_filters1'])
 num_filters2 = round(params_lenet_['num_filters2'])
 filter_size1 = round(params_lenet_['filter_size1'])
@@ -495,7 +492,7 @@ a = accuracy_score(pred,test)
 print('\nThe accuracy of test data is:', a*100)
 
 # Save model performance 
-acc_time = [['train_mean_acc', np.mean(cvscores)]
+acc_time = [['train_mean_acc', np.mean(cvscores)],
             ['bayes_opt_time', execution_time2], 
             ['training_time', execution_time1], 
             ['test_accuracy', a]]
@@ -588,10 +585,6 @@ roc_df.to_csv(f'{output_path}{model_name}_roc_curve.csv', index=False)
 for i in range(output_dim):
     roc_df = pd.DataFrame({'fpr': fpr[i], 'tpr': tpr[i]})
     roc_df.to_csv(f'{output_path}{model_name}_roc_curve_{i}.csv', index=False)
-
-# Save the model summary to a text file
-with open(f'{output_path}{model_name}_model_summary.txt', 'w') as f:
-    lenet_best_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
 # =============================================================================================
 """ END OF THE SCRIPT """
