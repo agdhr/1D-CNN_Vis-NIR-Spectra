@@ -17,13 +17,15 @@ from tensorflow import keras
 from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
 
-from models.alexnet import AlexNet
-from models.lenet import LeNet
+from models.lstm import lstm
+from models.alexnet import AlexNet, alexnet_lstm, lstm_alexnet
+from models.lenet import LeNet, lenet_lstm, lstm_lenet
 from models.vggnet import VGG16
 from models.densenet import DenseNet121
 from models.resnet import ResNet18
 from models.inception import Inception_v1
 from models.mobilenet import MobileNet_v1
+
 # =============================================================================================
 """ LOAD AND EXTRACT DATA """
 # =============================================================================================
@@ -40,8 +42,9 @@ def variable_data(data):
     return label, spectra, wls
 
 # Set model name
-
-model_name = 'densenet'  # Change this to any of the model names: 'LeNet', 'AlexNet', 'VGG11', 'DenseNet121', 'ResNet18', 'Inception_v1', 'MobileNet_v1'
+model_name = 'lenet'  # Change this to any of the model names: 'LeNet', 'AlexNet', 'VGG11', 'DenseNet121', 'ResNet18', 'Inception_v1', 'MobileNet_v1'
+# Set label names
+label_name = ['Gayo', 'Kintamani', 'Temanggung', 'Toraja']
 # Set the relevant paths
 output_path = 'd://z/master/spectra/cnn_spectrum/outputs/'+ model_name + '/'
 data_path = 'd://z/master/spectra/cnn_spectrum/data/'
@@ -52,7 +55,6 @@ data = load_csv(data_path + 'cleaned_data.csv') # Change this to any of the load
 # ---------------------------------------------------------------------------------------------------
 # Extract variable data (label, spectra, and wavelengths) from the loaded data
 label, spectra, wavelengths = variable_data(data)
-print(spectra.shape)
 print('TOTAL DATA: ', spectra.shape[0])
 print('TOTAL VARIABLES: ', spectra.shape[1])
 #---------------------------------------------------------------------------------------------------
@@ -63,31 +65,29 @@ model = AlexNet if model_name == 'alexnet' else \
         DenseNet121 if model_name == 'densenet' else \
         ResNet18 if model_name == 'resnet' else \
         Inception_v1 if model_name == 'inception' else \
-        MobileNet_v1 if model_name == 'mobilenet' else None
+        MobileNet_v1 if model_name == 'mobilenet' else \
+        lstm if model_name == 'lstm' else \
+        lenet_lstm if model_name == 'lenet_lstm' else \
+        lstm_lenet if model_name == 'lstm_lenet' else \
+        alexnet_lstm if model_name == 'alexnet_lstm' else \
+        lstm_alexnet if model_name == 'lstm_alexnet' else None
 if model is None:
     raise ValueError("Invalid model name. Choose from 'alexnet', 'lenet', 'vgg', 'densenet', 'resnet', 'inception', or 'mobilenet'.")
-
-# Define other parameters
-learning_rate = 0.001
-batch_size = 16
-epoch = 100
-seed = 7
-np.random.seed(seed)
-#----------------------------------------------------------------------------------------------------
 
 # ===================================================================================================
 """ DATA SPLIT """
 # ===================================================================================================
 # Binarize the output
 y_encoded = label_binarize(label, classes=[0,1,2,3])
-
-# Split the data into training and validation sets: 80% training and 20% validation
+# Extract output dimension
+output_dim = y_encoded.shape[1]
+# Split the data into training and test sets: 80% training and 20% test
 x_train, x_test, y_train, y_test = train_test_split(spectra, y_encoded, test_size=0.2, random_state=42)
 
 # ===================================================================================================
 """ DATA AUGMENTATION """
 # ===================================================================================================
-
+# Function to perform data augmentation
 def dataaugment(x, betashift, slopeshift, multishift):
     # Calculate shift of baseline
     beta = np.random.random(size=(x.shape[0],1))*2*betashift-betashift
@@ -100,7 +100,7 @@ def dataaugment(x, betashift, slopeshift, multishift):
     multi = np.random.random(size=(x.shape[0],1))*2*multishift-multishift + 1
     x = multi*x + offset
     return x
-
+# Calculate the shift value based on the standard deviation of the training data
 shift = np.std(x_train)*0.01
 
 # Data Augmentation a single spectrum
@@ -125,12 +125,13 @@ x_aug = dataaugment(x_rep, betashift = 0.1, slopeshift = 0.1, multishift = shift
 y_aug = np.repeat(y_train, repeats=5, axis=0) 
 print('Number of augmented spectra: ',len(x_aug))
 print('Number of augmented label: ', len(y_aug))
+print('Number of train data (before augmentation): ', x_train.shape[0])
 
-
+# Split the augmented data into training and validation sets: 50% training and 50% validation
 x_train, x_val, y_train, y_val = train_test_split(x_aug, y_aug, test_size=0.5, random_state=42)
 
-print('Number of train data: ', x_train.shape[0])
-print('Number of validation data: ', x_val.shape[0])
+print('Number of train data (after augmentation): ', x_train.shape[0])
+print('Number of validation data (after augmentation): ', x_val.shape[0])
 print('Number of test data: ', x_test.shape[0])
 
 # ===================================================================================================
@@ -140,7 +141,7 @@ print('Number of test data: ', x_test.shape[0])
 x_train = minmaxscaler(x_train)
 x_test = minmaxscaler(x_test)
 x_val = minmaxscaler(x_val)
-
+# Plot the standardized spectra
 _ = plt.plot(wavelengths, x_train[0:1].T)
 plt.title('Plot Standardized Spectra', fontweight='bold', fontsize=12, fontname="Segoe UI")
 plt.ylabel('Reflectance (%)', fontsize=12, fontname="Segoe UI")
@@ -160,13 +161,18 @@ output_dim = y_aug.shape[1]
 print('\nInput dimension of the model: ', input_dim)
 print('\nOutput dimension of the model: ', output_dim)
 
-model = model(input_dim, output_dim = 4, num_filters=16)
+model = model(input_dim, output_dim = 4)
 
+#----------------------------------------------------------------------------------------------------
+# Define other parameters
+learning_rate = 0.001
+batch_size = 16
+epoch = 100
+seed = 7
+np.random.seed(seed)
+#----------------------------------------------------------------------------------------------------
 
 cvscores = []
-
-print('\nK-fold cross validation: ')
-print('----------------------------------')
 
 # Gets the current date and time to start compiling model
 start1 = datetime.now()
@@ -218,7 +224,6 @@ with open(f'{output_path}{model_name}_{data_name}_history_df.csv', mode='w') as 
     history_df.to_csv(f)
 
 # Plot the training and validation accuracy and loss at each epoch
-
 plt.plot(history.history['loss'], label='loss')
 plt.plot(history.history['val_loss'], label='val_loss')
 plt.yscale('log')
@@ -238,20 +243,11 @@ plt.legend(loc='lower right')
 plt.savefig(f'{output_path}{model_name}_{data_name}_accuracy.png')
 plt.show()
 
-# Save the test data
-acc_time = [['mean_acc', np.mean(cvscores)], 
-            ['training_time', execution_time]]
-acc_time_df = pd.DataFrame(acc_time, columns=['params.', 'values'])
-acc_time_df.to_csv(f'{output_path}{model_name}_{data_name}_acc_time.csv', index=False)
-
 # ===================================================================================================
 """ MAKE PREDICTION USING TEST DATA """
 # ===================================================================================================
-
-# Load the model at a time for testing
-#model_path = f'{output_path}{model_name}_model.keras'
-#model = keras.models.load_model(model_path, compile=False)
-
+# Make predictions on the test data
+print('\nPredicting test data ....')
 # Predict the test data
 y_pred = model.predict(x_test)
 
@@ -269,10 +265,14 @@ for i in range(len(y_test)):
 a = accuracy_score(pred,test)
 print('The accuracy of test data is:', a*100)
 
-# Calculate confusion matrix
-label_name = ['Gayo', 'Kintamani', 'Temanggung', 'Toraja']
+# Save model performance 
+acc_time = [['train_mean_acc', np.mean(cvscores)], 
+            ['training_time', execution_time], 
+            ['test_accuracy', a]]
+acc_time_df = pd.DataFrame(acc_time, columns=['params.', 'values'])
+acc_time_df.to_csv(f'{output_path}{model_name}_{data_name}_acc_time.csv', index=False)
 
-# Create confusion matrix
+# Calculate confusion matrix
 cm_ = confusion_matrix(pred, test)
 print(cm_)
 
@@ -289,11 +289,11 @@ cm = pd.DataFrame(cm_, index=label_name, columns=label_name)
 cm.to_csv(f'{output_path}{model_name}_{data_name}_conmat.csv')
 
 # Plot confusion matrix using seaborn
-plt.figure(figsize=(10,7))
-sns.heatmap(cm_, annot=True, fmt='d', cmap='Blues', xticklabels=label_name, yticklabels=label_name)
-plt.title('Confusion Matrix of Training Data')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
+plt.figure(figsize=(7,5))
+sns.heatmap(cm_, annot=True, fmt='d', cmap='Blues', xticklabels=label_name, yticklabels=label_name, annot_kws={"size": 12})
+#plt.title('Confusion Matrix of Training Data')
+plt.xlabel('Predicted Label', fontsize=12, fontname="Segoe UI")
+plt.ylabel('True Label', fontsize=12, fontname="Segoe UI")
 plt.savefig(f'{output_path}{model_name}_{data_name}_conmat.png')
 plt.show()
 
